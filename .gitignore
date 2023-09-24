@@ -128,3 +128,12 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+# Prisma-generated client
+/node_modules
+/prisma/client
+
+# Environment variables
+/prisma/.env
+
+# macOS system files
+.DS_Store
