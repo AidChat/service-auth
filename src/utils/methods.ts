@@ -20,7 +20,11 @@ const hasherObj: {
         }, this.key,{expiresIn:this.expiry})
     },
     _verify: function(key:string) {
-        return jwt.verify(key, this.key);
+        try{
+            return jwt.verify(key, this.key);
+        }catch (e) {
+            return e
+        }
     },
     _hash : function(str:string){
         return jwt.sign({
