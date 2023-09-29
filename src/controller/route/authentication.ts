@@ -34,7 +34,9 @@ export function login(request: Request, response: Response) {
                                         id: result.sessionId ? result.sessionId : 0
                                     },
                                     update:
-                                        {}
+                                        {
+                                            session_id:sessionId
+                                        }
                                     ,
                                     create: {
                                         session_id: sessionId,
