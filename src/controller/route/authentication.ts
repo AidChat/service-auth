@@ -35,7 +35,8 @@ export function login(request: Request, response: Response) {
                                     },
                                     update:
                                         {
-                                            session_id:sessionId
+                                            session_id:sessionId,
+                                            extended : extend
                                         }
                                     ,
                                     create: {

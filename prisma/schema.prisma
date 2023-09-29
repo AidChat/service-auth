@@ -15,13 +15,139 @@ model User {
   email     String   @unique
   name      String
   password  String
-  session   Session? @relation(fields: [sessionId], references: [id],onDelete: Cascade)
+  session   Session?
   sessionId Int?
+  Group     Group[]
+}
+
+model Group {
+  id            Int         @id @default(autoincrement())
+  name          String
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+  User          User[]
+  userId        Int[]
+  GroupDetail   GroupDetail @relation(fields: [groupDetailId], references: [id])
+  groupDetailId Int
+}
+
+model GroupDetail {
+  id          Int           @id @default(autoincrement())
+  description String
+  tags        GroupTokens[]
+  Group       Group[]
 }
 
 model Session {
   id         Int     @id @default(autoincrement())
   session_id String  @unique
   extended   Boolean @default(false)
-  User       User[]
+  User       User?   @relation(fields: [userId], references: [id])
+  userId     Int?    @unique
+}
+
+model Socket {
+  id        Int    @id @default(autoincrement())
+  socket_id String
+}
+
+enum GroupTokens {
+  Sports
+  Music
+  Movies
+  Gaming
+  Travel
+  Food
+  Technology
+  Fitness
+  Books
+  Fashion
+  Photography
+  Cooking
+  Politics
+  Science
+  Art
+  Pets
+  Business
+  Education
+  Health
+  Nature
+  History
+  DIY
+  Entertainment
+  Gardening
+  Parenting
+  Relationships
+  Religion
+  TVShows
+  Cars
+  Hiking
+  Outdoors
+  Shopping
+  Finance
+  Design
+  Comedy
+  Anime
+  Yoga
+  Dance
+  Crafts
+  Cycling
+  Programming
+  Writing
+  Traveling
+  News
+  Beauty
+  Environment
+  Astronomy
+  Paranormal
+  Philosophy
+  Psychology
+  Spirituality
+  SelfImprovement
+  MentalHealth
+  Love
+  Friendship
+  Grief
+  Hope
+  Anger
+  Anxiety
+  Depression
+  Happiness
+  Stress
+  Loneliness
+  Fear
+  Forgiveness
+  Acceptance
+  Empathy
+  Gratitude
+  Compassion
+  Resilience
+  Trust
+  Communication
+  Kindness
+  Motivation
+  Inspiration
+  Encouragement
+  Meditation
+  Mindfulness
+  Reflection
+  Dreaming
+  Adventure
+  Discovery
+  Nostalgia
+  Creativity
+  Curiosity
+  Simplicity
+  Freedom
+
+  Justice
+  Equality
+  Ethics
+  Leadership
+  Innovation
+  Change
+  Community
+  Diversity
+  Inclusion
+  Sustainability
 }
