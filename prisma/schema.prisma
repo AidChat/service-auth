@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,13 +12,141 @@ model User {
   email     String   @unique
   name      String
   password  String
-  session   Session? @relation(fields: [sessionId], references: [id],onDelete: Cascade)
   sessionId Int?
+  Session   Session?
+  Group     Group[]  @relation("GroupToUser")
 }
 
 model Session {
   id         Int     @id @default(autoincrement())
   session_id String  @unique
   extended   Boolean @default(false)
-  User       User[]
+  userId     Int?    @unique
+  User       User?   @relation(fields: [userId], references: [id])
+}
+
+model Group {
+  id            Int         @id @default(autoincrement())
+  name          String
+  created_at    DateTime    @default(now())
+  updated_at    DateTime
+  userId        Int[]
+  groupDetailId Int         @unique
+  socketId      Int         @unique
+  GroupDetail   GroupDetail @relation(fields: [groupDetailId], references: [id])
+  Socket        Socket      @relation(fields: [socketId], references: [id])
+  User          User[]      @relation("GroupToUser")
+}
+
+model GroupDetail {
+  id          Int           @id @unique @default(autoincrement())
+  description String
+  tags        GroupTokens[]
+  Group       Group?
+}
+
+model Socket {
+  id        Int    @id @default(autoincrement())
+  socket_id String
+  Group     Group?
+}
+
+enum GroupTokens {
+  Sports
+  Music
+  Movies
+  Gaming
+  Travel
+  Food
+  Technology
+  Fitness
+  Books
+  Fashion
+  Photography
+  Cooking
+  Politics
+  Science
+  Art
+  Pets
+  Business
+  Education
+  Health
+  Nature
+  History
+  DIY
+  Entertainment
+  Gardening
+  Parenting
+  Relationships
+  Religion
+  TVShows
+  Cars
+  Hiking
+  Outdoors
+  Shopping
+  Finance
+  Design
+  Comedy
+  Anime
+  Yoga
+  Dance
+  Crafts
+  Cycling
+  Programming
+  Writing
+  Traveling
+  News
+  Beauty
+  Environment
+  Astronomy
+  Paranormal
+  Philosophy
+  Psychology
+  Spirituality
+  SelfImprovement
+  MentalHealth
+  Love
+  Friendship
+  Grief
+  Hope
+  Anger
+  Anxiety
+  Depression
+  Happiness
+  Stress
+  Loneliness
+  Fear
+  Forgiveness
+  Acceptance
+  Empathy
+  Gratitude
+  Compassion
+  Resilience
+  Trust
+  Communication
+  Kindness
+  Motivation
+  Inspiration
+  Encouragement
+  Meditation
+  Mindfulness
+  Reflection
+  Dreaming
+  Adventure
+  Discovery
+  Nostalgia
+  Creativity
+  Curiosity
+  Simplicity
+  Freedom
+  Justice
+  Equality
+  Ethics
+  Leadership
+  Innovation
+  Change
+  Community
+  Diversity
+  Inclusion
+  Sustainability
 }
