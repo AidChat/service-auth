@@ -5,7 +5,7 @@ const hasherObj: {
     expire :string,
     expiry:string,
     _hash : (s:string) => string,
-    _verify : (k:string) => string,
+    _verify : (k:string) => Promise<any>,
     key:string | undefined
 } = {
     hash: null,
@@ -19,12 +19,16 @@ const hasherObj: {
             data: userName
         }, this.key,{expiresIn:this.expiry})
     },
-    _verify: function(key:string) {
-        try{
-            return jwt.verify(key, this.key);
-        }catch (e) {
-            return e
-        }
+    _verify: function(key:string) : Promise<any> {
+        return new Promise((resolve,reject)=>{
+            try {
+                let data = jwt.verify(key, this.key)
+                resolve(data);
+            }catch (e) {
+                reject(e)
+            }
+        })
+
     },
     _hash : function(str:string){
         return jwt.sign({

@@ -1,13 +1,13 @@
 import express, {Express, Request, Response} from 'express';
 import dotenv from 'dotenv';
 import {config} from "./utils/appConfig";
-import bodyParser from "body-parser";
+import cors from 'cors';
 dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT;
 const authentication = require('./routes/authentication');
-
+app.use(cors())
 app.use(express.json())
 app.get(config._urlParser('/'), (req: Request, res: Response) => {
    res.send(config._service)
