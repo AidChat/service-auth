@@ -28,7 +28,6 @@ export function login(request: Request, response: Response) {
                         responseHandler(404, response, {message: 'Please register first'})
                     } else {
                         const {data} = await hasher._verify(result.password)
-                        console.log(data, password)
                         if (password === data) {
                             if (extend) {
                                 hasher.expire = '2d'
@@ -40,7 +39,8 @@ export function login(request: Request, response: Response) {
                                     },
                                     update:
                                         {
-                                            session_id:sessionId
+                                            session_id:sessionId,
+                                            extend:extend
                                         }
                                     ,
                                     create: {
