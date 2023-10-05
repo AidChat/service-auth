@@ -4,6 +4,7 @@ import {config} from "../../utils/appConfig";
 import {hasher} from "../../utils/methods";
 import axios from "axios";
 import {url} from "../../network/sources";
+import {User} from "@prisma/client";
 
 
 /**
@@ -30,7 +31,7 @@ export function login(request: Request, response: Response) {
                         const {data} = await hasher._verify(result.password)
                         if (password === data) {
                             if (extend) {
-                                hasher.expire = '2d'
+                                hasher.expire = '7d'
                             }
                             const sessionId = hasher._createSession(result.email);
                             config._query.session.upsert({
@@ -39,8 +40,8 @@ export function login(request: Request, response: Response) {
                                     },
                                     update:
                                         {
-                                            session_id:sessionId,
-                                            extend:extend
+                                            session_id: sessionId,
+                                            extended: extend
                                         }
                                     ,
                                     create: {
@@ -130,6 +131,8 @@ export async function register(request: Request, response: Response) {
     }
 }
 
+
+
 export function sessionController(request: Request, response: Response) {
     try {
         let session = request.headers.session;
@@ -137,11 +140,11 @@ export function sessionController(request: Request, response: Response) {
             responseHandler(400, response, {message: "No session found"});
         } else {
             hasher._verify(session).then((result: any) => {
-                responseHandler(200,response,{message:"Session valid"})
+                responseHandler(200, response, {message: "Session valid"})
             })
                 .catch((reason: any) => {
                     console.log(session)
-                    responseHandler(403,response,{message:"Session timeout"})
+                    responseHandler(403, response, {message: "Session timeout"})
                 })
         }
     } catch (e) {
