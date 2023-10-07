@@ -2,6 +2,9 @@ import {responseHandler} from "../../utils/response-handler";
 import {Request, Response} from "express";
 import {config} from "../../utils/appConfig";
 import {hasher} from "../../utils/methods";
+import axios from "axios";
+import {url} from "../../network/sources";
+import {User} from "@prisma/client";
 
 
 /**
@@ -17,26 +20,28 @@ export function login(request: Request, response: Response) {
             config._query.user.findUnique({
                 where: {
                     email: email
+                },
+                include: {
+                    Session: true
                 }
-            }).then((result: any) => {
+            }).then(async (result: any) => {
                     if (!result) {
                         responseHandler(404, response, {message: 'Please register first'})
                     } else {
-                        const data = hasher._verify(result.password);
-                        const storePassword = data.data;
-                        if (password === storePassword) {
+                        const {data} = await hasher._verify(result.password)
+                        if (password === data) {
                             if (extend) {
-                                hasher.expire = '2d'
+                                hasher.expire = '7d'
                             }
                             const sessionId = hasher._createSession(result.email);
                             config._query.session.upsert({
                                     where: {
-                                        id: result.sessionId ? result.sessionId : 0
+                                        id: result.Session.id ? result.Session.id : 0
                                     },
                                     update:
                                         {
-                                            session_id:sessionId,
-                                            extended : extend
+                                            session_id: sessionId,
+                                            extended: extend
                                         }
                                     ,
                                     create: {
@@ -88,16 +93,34 @@ export async function register(request: Request, response: Response) {
                     responseHandler(403, response, {message: 'User already exists'});
                 } else {
                     const hashedPassword: string = hasher._hash(password);
+                    const sessionId = hasher._createSession(email);
                     config._query.user.create({
                         data: {
                             email: email,
                             password: hashedPassword,
-                            name: name
+                            name: name,
+                            Session: {
+                                create: {
+                                    session_id: sessionId
+                                }
+                            },
+                        },
+                        include: {
+                            Session: true
                         }
                     }).then((result: any) => {
                         delete result.password;
+                        // create own group
+                        let selfGroup: { name: string, description: string, keywords: string[] } = {
+                            name: "Notes",
+                            description: "Private group for storing note.",
+                            keywords: []
+                        }
+                        JSON.stringify(selfGroup)
+                        axios.post(`${url['_host_group']}/group`, selfGroup, {headers: {'session': result.Session.session_id}})
                         responseHandler(200, response, {data: result});
                     }).catch((e: any) => {
+                        console.log(e)
                         responseHandler(502, response, {message: 'Please try again later'});
                     })
                 }
@@ -105,5 +128,27 @@ export async function register(request: Request, response: Response) {
         }
     } catch (e) {
         responseHandler(500, response);
+    }
+}
+
+
+
+export function sessionController(request: Request, response: Response) {
+    try {
+        let session = request.headers.session;
+        if (!session) {
+            responseHandler(400, response, {message: "No session found"});
+        } else {
+            hasher._verify(session).then((result: any) => {
+                responseHandler(200, response, {message: "Session valid"})
+            })
+                .catch((reason: any) => {
+                    console.log(session)
+                    responseHandler(403, response, {message: "Session timeout"})
+                })
+        }
+    } catch (e) {
+        console.log(e)
+        responseHandler(503, response, {message: "Please try again later"})
     }
 }
