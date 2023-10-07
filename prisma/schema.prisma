@@ -8,13 +8,14 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
   name      String
   password  String
   sessionId Int?
+  Message   Message[]
   Session   Session?
-  Group     Group[]  @relation("GroupToUser")
+  Group     Group[]   @relation("GroupToUser")
 }
 
 model Session {
@@ -35,6 +36,7 @@ model Group {
   socketId      Int         @unique
   GroupDetail   GroupDetail @relation(fields: [groupDetailId], references: [id])
   Socket        Socket      @relation(fields: [socketId], references: [id])
+  Message       Message[]
   User          User[]      @relation("GroupToUser")
 }
 
@@ -47,8 +49,28 @@ model GroupDetail {
 
 model Socket {
   id        Int    @id @default(autoincrement())
-  socket_id String
+  socket_id String @unique
   Group     Group?
+}
+
+model Message {
+  id               Int            @id @default(autoincrement())
+  created_at       DateTime       @default(now())
+  senderId         Int
+  groupId          Int?
+  messageContentId Int
+  status           MESSAGE_SATUS  @default(DELIVERED)
+  Group            Group?         @relation(fields: [groupId], references: [id])
+  MessageContent   MessageContent @relation(fields: [messageContentId], references: [id])
+  User             User           @relation(fields: [senderId], references: [id])
+}
+
+model MessageContent {
+  id      Int                  @id @default(autoincrement())
+  TYPE    MESSAGE_CONTENT_TYPE @default(TEXT)
+  content String
+  caption String?
+  Message Message[]
 }
 
 enum GroupTokens {
@@ -149,4 +171,14 @@ enum GroupTokens {
   DIVERSITY
   INCLUSION
   SUSTAINABILITY
+}
+
+enum MESSAGE_CONTENT_TYPE {
+  TEXT
+  IMAGE
+}
+
+enum MESSAGE_SATUS {
+  DELIVERED
+  READ
 }
