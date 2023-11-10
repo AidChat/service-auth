@@ -114,7 +114,7 @@ export async function register(request: Request, response: Response) {
                         let selfGroup: { name: string, description: string, keywords: string[] } = {
                             name: "Notes",
                             description: "Private group for storing note.",
-                            keywords: []
+                            keywords: ['PRIVATE']
                         }
                         JSON.stringify(selfGroup)
                         axios.post(`${url['_host_group']}/group`, selfGroup, {headers: {'session': result.Session.session_id}})
