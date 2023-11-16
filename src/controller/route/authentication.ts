@@ -4,7 +4,6 @@ import {config} from "../../utils/appConfig";
 import {hasher} from "../../utils/methods";
 import axios from "axios";
 import {url} from "../../network/sources";
-import {User} from "@prisma/client";
 
 
 /**
@@ -13,7 +12,7 @@ import {User} from "@prisma/client";
  */
 export function login(request: Request, response: Response) {
     try {
-        let {email, password, extend} = request.body;
+        let {email, password, extend, requestId} = request.body;
         if (!email || !password) {
             responseHandler(400, response, {message: 'Please provide required inputs'});
         } else {
@@ -36,7 +35,7 @@ export function login(request: Request, response: Response) {
                             const sessionId = hasher._createSession(result.email);
                             config._query.session.upsert({
                                     where: {
-                                        id: result.Session.id ? result.Session.id : 0
+                                        id: result?.Session?.id ? result.Session.id : 0
                                     },
                                     update:
                                         {
@@ -55,9 +54,45 @@ export function login(request: Request, response: Response) {
                                     }
                                 }
                             ).then((session: any) => {
-                                responseHandler(200, response, {data: {session: session}});
+                                if (requestId) {
+                                    config._query.request.findFirst({where: {id: requestId}})
+                                        .then((res: any) => {
+                                            if (res ) {
+                                                config._query.group.update({
+                                                    where: {id: res.groupId},
+                                                    data: {User: {connect: result}},
+                                                    include: {User: true}
+                                                })
+                                                    .then((groupUpdate: any) => {
+                                                        config._query.request.delete({where: {id: res.id}})
+                                                            .then(() => {
+                                                                config._query.role.create({
+                                                                    data: {
+                                                                        userId: result.id,
+                                                                        groupId: groupUpdate.id
+                                                                    }
+                                                                })
+                                                                    .then(() => {
+                                                                        responseHandler(200, response, {data: {session: session}});
+                                                                    })
+                                                            })
+                                                    })
+                                                    .catch((error: any) => {
+                                                        responseHandler(200, response, {data: {session: session}});
+                                                    })
+                                            } else {
+                                                responseHandler(200, response, {data: {session: session}});
+                                            }
+                                        })
+                                        .catch((e: any) => {
+                                            console.log(e);
+                                            responseHandler(200, response, {data: {session: session}});
+                                        })
+                                }else{
+                                    responseHandler(200, response, {data: {session: session}});
+                                }
                             }).catch((e: any) => {
-                                console.log(e);
+
                                 responseHandler(500, response, {message: "Please try again later"})
 
                             })
@@ -80,7 +115,7 @@ export function login(request: Request, response: Response) {
  */
 export async function register(request: Request, response: Response) {
     try {
-        const {email, password, name} = request.body;
+        const {email, password, name, requestId} = request.body;
         if (!email || !password || !name) {
             responseHandler(400, response, {message: 'Please provide required inputs'});
         } else {
@@ -108,17 +143,53 @@ export async function register(request: Request, response: Response) {
                         include: {
                             Session: true
                         }
-                    }).then((result: any) => {
-                        delete result.password;
+                    }).then((user: any) => {
+                        delete user.password;
                         // create own group
                         let selfGroup: { name: string, description: string, keywords: string[] } = {
                             name: "Notes",
-                            description: "Private group for storing note.",
+                            description: "Private group for storing notes.",
                             keywords: ['PRIVATE']
                         }
-                        JSON.stringify(selfGroup)
-                        axios.post(`${url['_host_group']}/group`, selfGroup, {headers: {'session': result.Session.session_id}})
-                        responseHandler(200, response, {data: result});
+                        JSON.stringify(selfGroup);
+                        axios.post(`${url['_host_group']}/group`, selfGroup, {headers: {'session': user.Session.session_id}});
+                        if (requestId) {
+                            config._query.request.findFirst({where: {id: requestId}})
+                                .then((result: any) => {
+                                    if (result && (result.invitee === user.email)) {
+                                        config._query.group.update({
+                                            where: {id: result.groupId},
+                                            data: {User: {connect: user}},
+                                            include: {User: true}
+                                        })
+                                            .then((groupUpdate: any) => {
+                                                config._query.request.delete({where: {id: result.id}})
+                                                    .then(() => {
+                                                        config._query.role.create({
+                                                            data: {
+                                                                userId: user.id,
+                                                                groupId: groupUpdate.id
+                                                            }
+                                                        })
+                                                            .then(() => {
+                                                                responseHandler(200, response, {data: result});
+                                                            })
+                                                    })
+
+
+                                            })
+                                            .catch((error: any) => {
+                                                responseHandler(200, response, {data: result});
+                                            })
+                                    } else {
+                                        responseHandler(200, response, {data: result});
+                                    }
+                                })
+                                .catch((e: any) => {
+                                    console.log(e);
+                                    responseHandler(200, response, {data: user});
+                                })
+                        }
                     }).catch((e: any) => {
                         console.log(e)
                         responseHandler(502, response, {message: 'Please try again later'});
@@ -132,7 +203,6 @@ export async function register(request: Request, response: Response) {
 }
 
 
-
 export function sessionController(request: Request, response: Response) {
     try {
         let session = request.headers.session;
@@ -140,7 +210,7 @@ export function sessionController(request: Request, response: Response) {
             responseHandler(400, response, {message: "No session found"});
         } else {
             hasher._verify(session).then((result: any) => {
-                responseHandler(200, response, {message: "Session valid"})
+                responseHandler(200, response, {message: "Session valid", data: {email: result}})
             })
                 .catch((reason: any) => {
                     console.log(session)
@@ -149,6 +219,20 @@ export function sessionController(request: Request, response: Response) {
         }
     } catch (e) {
         console.log(e)
+        responseHandler(503, response, {message: "Please try again later"})
+    }
+}
+export function removeSessionController(request: Request, response: Response){
+    try{
+        let session = request.headers.session;
+        config._query.session.delete({where:{session_id:session}})
+            .then(()=>{
+                responseHandler(200,response,{message:"Session removed"});
+            })
+            .catch(()=>{
+                responseHandler(304,response,{message:"Request failed. Please try again later!"})
+            })
+    }catch (e) {
         responseHandler(503, response, {message: "Please try again later"})
     }
 }
