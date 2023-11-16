@@ -1,7 +1,7 @@
 import {hasher} from "../utils/methods";
 import {NextFunction, Request, Response} from "express";
 
-export function verifyClient(request:Request,response:Response,next:NextFunction) {
+export function verifyClient(request:Request,_: any,next:NextFunction) {
     try {
         let token = request.headers.session;
         if (!token) {
@@ -15,8 +15,7 @@ export function verifyClient(request:Request,response:Response,next:NextFunction
                 }
                 next();
             })
-                .catch((e:any) => {
-                    console.log(e)
+                .catch(() => {
                     const err: Error = new Error("Token expired")
                     next(err);
                 })

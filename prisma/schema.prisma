@@ -8,14 +8,17 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  name      String
-  password  String
-  sessionId Int?
-  Message   Message[]
-  Session   Session?
-  Group     Group[]   @relation("GroupToUser")
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  name         String
+  password     String
+  profileImage String    @default("")
+  sessionId    Int?
+  Message      Message[]
+  Request      Request[]
+  Role         Role[]
+  Session      Session?
+  Group        Group[]   @relation("GroupToUser")
 }
 
 model Session {
@@ -37,6 +40,8 @@ model Group {
   GroupDetail   GroupDetail @relation(fields: [groupDetailId], references: [id])
   Socket        Socket      @relation(fields: [socketId], references: [id])
   Message       Message[]
+  Request       Request[]
+  Role          Role[]
   User          User[]      @relation("GroupToUser")
 }
 
@@ -71,6 +76,26 @@ model MessageContent {
   content String
   caption String?
   Message Message[]
+}
+
+model Request {
+  id      String      @unique
+  groupId Int
+  userId  Int
+  type    RequestType @default(INVITE)
+  invitee String
+  role    RoleType    @default(MEMBER)
+  Group   Group       @relation(fields: [groupId], references: [id])
+  User    User        @relation(fields: [userId], references: [id])
+}
+
+model Role {
+  id      Int      @id @default(autoincrement())
+  type    RoleType @default(MEMBER)
+  userId  Int
+  groupId Int
+  Group   Group    @relation(fields: [groupId], references: [id])
+  User    User     @relation(fields: [userId], references: [id])
 }
 
 enum GroupTokens {
@@ -171,6 +196,7 @@ enum GroupTokens {
   DIVERSITY
   INCLUSION
   SUSTAINABILITY
+  PRIVATE
 }
 
 enum MESSAGE_CONTENT_TYPE {
@@ -181,4 +207,15 @@ enum MESSAGE_CONTENT_TYPE {
 enum MESSAGE_SATUS {
   DELIVERED
   READ
+}
+
+enum RequestType {
+  INVITE
+  MANUAL
+}
+
+enum RoleType {
+  ADMIN
+  OWNER
+  MEMBER
 }
