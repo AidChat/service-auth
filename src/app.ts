@@ -2,12 +2,25 @@ import express, {Express, Request, Response} from 'express';
 import dotenv from 'dotenv';
 import {config} from "./utils/appConfig";
 import cors from 'cors';
+import {v2 as cloudinary} from 'cloudinary';
+import {imageUpload} from "./network/sources";
 dotenv.config();
+
 
 const app: Express = express();
 const port = process.env.PORT;
 const authentication = require('./routes/authentication');
 const user  = require('./routes/user')
+
+
+cloudinary.config({
+    cloud_name: 'marcrove',
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+
+
 app.use(cors())
 app.use(express.json())
 app.get(config._urlParser('/'), (req: Request, res: Response) => {

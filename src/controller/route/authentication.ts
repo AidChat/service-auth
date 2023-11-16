@@ -3,7 +3,8 @@ import {Request, Response} from "express";
 import {config} from "../../utils/appConfig";
 import {hasher} from "../../utils/methods";
 import axios from "axios";
-import {url} from "../../network/sources";
+import {imageUpload, url} from "../../network/sources";
+import {User} from "@prisma/client";
 
 
 /**
@@ -25,7 +26,7 @@ export function login(request: Request, response: Response) {
                 }
             }).then(async (result: any) => {
                     if (!result) {
-                        responseHandler(404, response, {message: 'Please register first'})
+                        responseHandler(404, response, {message: 'User does not exists.'})
                     } else {
                         const {data} = await hasher._verify(result.password)
                         if (password === data) {
@@ -57,7 +58,7 @@ export function login(request: Request, response: Response) {
                                 if (requestId) {
                                     config._query.request.findFirst({where: {id: requestId}})
                                         .then((res: any) => {
-                                            if (res ) {
+                                            if (res) {
                                                 config._query.group.update({
                                                     where: {id: res.groupId},
                                                     data: {User: {connect: result}},
@@ -88,7 +89,7 @@ export function login(request: Request, response: Response) {
                                             console.log(e);
                                             responseHandler(200, response, {data: {session: session}});
                                         })
-                                }else{
+                                } else {
                                     responseHandler(200, response, {data: {session: session}});
                                 }
                             }).catch((e: any) => {
@@ -222,17 +223,69 @@ export function sessionController(request: Request, response: Response) {
         responseHandler(503, response, {message: "Please try again later"})
     }
 }
-export function removeSessionController(request: Request, response: Response){
-    try{
+
+export function removeSessionController(request: Request, response: Response) {
+    try {
         let session = request.headers.session;
-        config._query.session.delete({where:{session_id:session}})
-            .then(()=>{
-                responseHandler(200,response,{message:"Session removed"});
+        config._query.session.delete({where: {session_id: session}})
+            .then(() => {
+                responseHandler(200, response, {message: "Session removed"});
             })
-            .catch(()=>{
-                responseHandler(304,response,{message:"Request failed. Please try again later!"})
+            .catch((e: any) => {
+                console.log(e);
+                responseHandler(200, response, {message: "Request failed. Please try again later!"})
+            })
+    } catch (e) {
+        responseHandler(503, response, {message: "Please try again later"})
+    }
+}
+
+export function updateProfile(request: Request, response: Response) {
+    try {
+        const {profileImage, name} = request.body;
+        let imageUrl: string = ''
+        const email = request.body.user.email;
+        config._query.user.findFirst({where: {email:email}})
+            .then((res: User) => {
+                if (res) {
+                    if (profileImage) {
+                        imageUpload(profileImage, '_profile' + res.name, (data: any) => {
+                            imageUrl = data.url;
+                            config._query.user.update({where: {email: email},
+                                data: {
+                                    profileImage: imageUrl,
+                                    name: name
+                                }
+                            }).then((result: any) => {
+                                responseHandler(200, response, {data: result})
+                            })
+                                .catch((error: any) => {
+                                    console.log(error)
+                                })
+                        })
+                    } else {
+                        config._query.user.update({
+                            where: { email: email },
+                            data: {
+                                name: name
+                            }
+                        }).then((result: any) => {
+                            responseHandler(200, response, {data: result})
+                        })
+                            .catch((error: any) => {
+                                responseHandler(503,response,{message:"Please try again later"});
+                            })
+                    }
+                } else {
+                    responseHandler(404, response, {message: 'User not found'});
+                }
+            })
+            .catch((error: any) => {
+                console.log(error)
+                responseHandler(404, response, {message: "User not found"});
             })
     }catch (e) {
-        responseHandler(503, response, {message: "Please try again later"})
+        console.log(e);
+        responseHandler(503,response,{message:"Please try again later"});
     }
 }
