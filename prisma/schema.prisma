@@ -12,8 +12,8 @@ model User {
   email        String    @unique
   name         String
   password     String
-  profileImage String    @default("")
   sessionId    Int?
+  profileImage String    @default("")
   Message      Message[]
   Request      Request[]
   Role         Role[]
@@ -49,6 +49,7 @@ model GroupDetail {
   id          Int           @id @unique @default(autoincrement())
   description String
   tags        GroupTokens[]
+  icon        String        @default("")
   Group       Group?
 }
 
@@ -212,6 +213,7 @@ enum MESSAGE_SATUS {
 enum RequestType {
   INVITE
   MANUAL
+  DELETE
 }
 
 enum RoleType {

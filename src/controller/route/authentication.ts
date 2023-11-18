@@ -70,7 +70,8 @@ export function login(request: Request, response: Response) {
                                                                 config._query.role.create({
                                                                     data: {
                                                                         userId: result.id,
-                                                                        groupId: groupUpdate.id
+                                                                        groupId: groupUpdate.id,
+                                                                        type:res.role
                                                                     }
                                                                 })
                                                                     .then(() => {
@@ -169,7 +170,8 @@ export async function register(request: Request, response: Response) {
                                                         config._query.role.create({
                                                             data: {
                                                                 userId: user.id,
-                                                                groupId: groupUpdate.id
+                                                                groupId: groupUpdate.id,
+                                                                type:result.role
                                                             }
                                                         })
                                                             .then(() => {
