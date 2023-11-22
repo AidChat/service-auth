@@ -80,14 +80,16 @@ model MessageContent {
 }
 
 model Request {
-  id      String      @unique
+  id      String        @unique
   groupId Int
   userId  Int
-  type    RequestType @default(INVITE)
+  type    RequestType   @default(INVITE)
   invitee String
-  role    RoleType    @default(MEMBER)
-  Group   Group       @relation(fields: [groupId], references: [id])
-  User    User        @relation(fields: [userId], references: [id])
+  role    RoleType      @default(MEMBER)
+  message String        @default("")
+  status  RequestStatus @default(PENDING)
+  Group   Group         @relation(fields: [groupId], references: [id])
+  User    User          @relation(fields: [userId], references: [id])
 }
 
 model Role {
@@ -220,4 +222,11 @@ enum RoleType {
   ADMIN
   OWNER
   MEMBER
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
 }
