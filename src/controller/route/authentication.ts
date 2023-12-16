@@ -33,7 +33,7 @@ export function login(request: Request, response: Response) {
                             if (extend) {
                                 hasher.expire = '7d'
                             }
-                            const sessionId = hasher._createSession(result.email);
+                            const sessionId = hasher._createSession(result.email,result.id);
                             config._query.session.upsert({
                                     where: {
                                         id: result?.Session?.id ? result.Session.id : 0
@@ -130,7 +130,7 @@ export async function register(request: Request, response: Response) {
                     responseHandler(403, response, {message: 'User already exists'});
                 } else {
                     const hashedPassword: string = hasher._hash(password);
-                    const sessionId = hasher._createSession(email);
+                    const sessionId = hasher._createSession(email,data.id);
                     config._query.user.create({
                         data: {
                             email: email,

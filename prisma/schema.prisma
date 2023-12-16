@@ -8,17 +8,20 @@ datasource db {
 }
 
 model User {
-  id           Int       @id @default(autoincrement())
-  email        String    @unique
-  name         String
-  password     String
-  sessionId    Int?
-  profileImage String    @default("")
-  Message      Message[]
-  Request      Request[]
-  Role         Role[]
-  Session      Session?
-  Group        Group[]   @relation("GroupToUser")
+  id            Int           @id @default(autoincrement())
+  email         String        @unique
+  name          String
+  password      String
+  sessionId     Int?
+  profileImage  String        @default("")
+  readReceiptId Int?
+  Joining       Joining[]
+  Message       Message[]
+  ReadReceipt   ReadReceipt[]
+  Request       Request[]
+  Role          Role[]
+  Session       Session?
+  Group         Group[]       @relation("GroupToUser")
 }
 
 model Session {
@@ -39,6 +42,7 @@ model Group {
   socketId      Int         @unique
   GroupDetail   GroupDetail @relation(fields: [groupDetailId], references: [id])
   Socket        Socket      @relation(fields: [socketId], references: [id])
+  Joining       Joining[]
   Message       Message[]
   Request       Request[]
   Role          Role[]
@@ -66,9 +70,11 @@ model Message {
   groupId          Int?
   messageContentId Int
   status           MESSAGE_SATUS  @default(DELIVERED)
+  readReceiptId    Int?
   Group            Group?         @relation(fields: [groupId], references: [id])
   MessageContent   MessageContent @relation(fields: [messageContentId], references: [id])
   User             User           @relation(fields: [senderId], references: [id])
+  ReadReceipt      ReadReceipt[]
 }
 
 model MessageContent {
@@ -99,6 +105,24 @@ model Role {
   groupId Int
   Group   Group    @relation(fields: [groupId], references: [id])
   User    User     @relation(fields: [userId], references: [id])
+}
+
+model Joining {
+  id        Int      @unique @default(autoincrement())
+  timestamp DateTime
+  userId    Int
+  groupId   Int
+  Group     Group    @relation(fields: [groupId], references: [id])
+  User      User     @relation(fields: [userId], references: [id])
+}
+
+model ReadReceipt {
+  id        Int           @unique @default(autoincrement())
+  status    MessageStatus @default(Sent)
+  messageId Int
+  userId    Int
+  Message   Message       @relation(fields: [messageId], references: [id])
+  User      User          @relation(fields: [userId], references: [id])
 }
 
 enum GroupTokens {
@@ -229,4 +253,9 @@ enum RequestStatus {
   ACCEPTED
   REJECTED
   BLOCKED
+}
+
+enum MessageStatus {
+  Read
+  Sent
 }
