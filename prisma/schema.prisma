@@ -8,20 +8,21 @@ datasource db {
 }
 
 model User {
-  id            Int           @id @default(autoincrement())
-  email         String        @unique
-  name          String
-  password      String
-  sessionId     Int?
-  profileImage  String        @default("")
-  readReceiptId Int?
-  Joining       Joining[]
-  Message       Message[]
-  ReadReceipt   ReadReceipt[]
-  Request       Request[]
-  Role          Role[]
-  Session       Session?
-  Group         Group[]       @relation("GroupToUser")
+  id             Int             @id @default(autoincrement())
+  email          String          @unique
+  name           String
+  password       String
+  sessionId      Int?
+  profileImage   String          @default("")
+  readReceiptId  Int?
+  ActivityStatus ActivityStatus?
+  Joining        Joining[]
+  Message        Message[]
+  ReadReceipt    ReadReceipt[]
+  Request        Request[]
+  Role           Role[]
+  Session        Session?
+  Group          Group[]         @relation("GroupToUser")
 }
 
 model Session {
@@ -123,6 +124,14 @@ model ReadReceipt {
   userId    Int
   Message   Message       @relation(fields: [messageId], references: [id])
   User      User          @relation(fields: [userId], references: [id])
+}
+
+model ActivityStatus {
+  id     Int          @id @default(autoincrement())
+  status UserActivity
+  userId Int          @unique
+  date   DateTime     @default(now())
+  User   User         @relation(fields: [userId], references: [id])
 }
 
 enum GroupTokens {
@@ -258,4 +267,13 @@ enum RequestStatus {
 enum MessageStatus {
   Read
   Sent
+}
+
+enum UserActivity {
+  ONLINE
+  OFFLINE
+  INACTIVE
+  BANNED
+  LEAVE
+  AWAY
 }

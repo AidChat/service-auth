@@ -130,22 +130,22 @@ export async function register(request: Request, response: Response) {
                     responseHandler(403, response, {message: 'User already exists'});
                 } else {
                     const hashedPassword: string = hasher._hash(password);
-                    const sessionId = hasher._createSession(email,data.id);
                     config._query.user.create({
                         data: {
                             email: email,
                             password: hashedPassword,
-                            name: name,
-                            Session: {
-                                create: {
-                                    session_id: sessionId
-                                }
-                            },
-                        },
-                        include: {
-                            Session: true
+                            name: name
                         }
-                    }).then((user: any) => {
+                    }).then(async (user: any) => {
+                        const sessionId = hasher._createSession(email, user.id);
+                        user.Session = await config._query.session.create({
+                            data: {
+                                session_id: sessionId,
+                                extended: false,
+                                userId: user.id
+                            }
+                        });
+
                         delete user.password;
                         // create own group
                         let selfGroup: { name: string, description: string, keywords: string[] } = {
@@ -171,7 +171,7 @@ export async function register(request: Request, response: Response) {
                                                             data: {
                                                                 userId: user.id,
                                                                 groupId: groupUpdate.id,
-                                                                type:result.role
+                                                                type: result.role
                                                             }
                                                         })
                                                             .then(() => {
