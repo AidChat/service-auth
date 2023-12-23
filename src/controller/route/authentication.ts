@@ -28,12 +28,17 @@ export function login(request: Request, response: Response) {
                     if (!result) {
                         responseHandler(404, response, {message: 'User does not exists.'})
                     } else {
+                        if (!result.password) {
+                            // social login case
+                            return responseHandler(404, response, {message: 'User does not exists.'})
+
+                        }
                         const {data} = await hasher._verify(result.password)
                         if (password === data) {
                             if (extend) {
                                 hasher.expire = '7d'
                             }
-                            const sessionId = hasher._createSession(result.email);
+                            const sessionId = hasher._createSession(result.email, result.id);
                             config._query.session.upsert({
                                     where: {
                                         id: result?.Session?.id ? result.Session.id : 0
@@ -70,7 +75,8 @@ export function login(request: Request, response: Response) {
                                                                 config._query.role.create({
                                                                     data: {
                                                                         userId: result.id,
-                                                                        groupId: groupUpdate.id
+                                                                        groupId: groupUpdate.id,
+                                                                        type: res.role
                                                                     }
                                                                 })
                                                                     .then(() => {
@@ -110,7 +116,7 @@ export function login(request: Request, response: Response) {
     }
 }
 
-/**
+/**\
  * @param request
  * @param response
  */
@@ -120,31 +126,34 @@ export async function register(request: Request, response: Response) {
         if (!email || !password || !name) {
             responseHandler(400, response, {message: 'Please provide required inputs'});
         } else {
+            if (password.split('').length < 8) {
+                return responseHandler(403, response, {message: 'Password should be more than 8 characters'});
+            }
             config._query.user.findUnique({
                 where: {
                     email: email
                 }
             }).then((data: any) => {
                 if (data) {
-                    responseHandler(403, response, {message: 'User already exists'});
+                    responseHandler(403, response, {message: 'User already exists. Please login'});
                 } else {
                     const hashedPassword: string = hasher._hash(password);
-                    const sessionId = hasher._createSession(email);
                     config._query.user.create({
                         data: {
                             email: email,
                             password: hashedPassword,
-                            name: name,
-                            Session: {
-                                create: {
-                                    session_id: sessionId
-                                }
-                            },
-                        },
-                        include: {
-                            Session: true
+                            name: name
                         }
-                    }).then((user: any) => {
+                    }).then(async (user: any) => {
+                        const sessionId = hasher._createSession(email, user.id);
+                        user.Session = await config._query.session.create({
+                            data: {
+                                session_id: sessionId,
+                                extended: false,
+                                userId: user.id
+                            }
+                        });
+
                         delete user.password;
                         // create own group
                         let selfGroup: { name: string, description: string, keywords: string[] } = {
@@ -169,7 +178,8 @@ export async function register(request: Request, response: Response) {
                                                         config._query.role.create({
                                                             data: {
                                                                 userId: user.id,
-                                                                groupId: groupUpdate.id
+                                                                groupId: groupUpdate.id,
+                                                                type: result.role
                                                             }
                                                         })
                                                             .then(() => {
@@ -190,6 +200,8 @@ export async function register(request: Request, response: Response) {
                                     console.log(e);
                                     responseHandler(200, response, {data: user});
                                 })
+                        } else {
+                            responseHandler(200, response, {data: user});
                         }
                     }).catch((e: any) => {
                         console.log(e)
@@ -245,13 +257,14 @@ export function updateProfile(request: Request, response: Response) {
         const {profileImage, name} = request.body;
         let imageUrl: string = ''
         const email = request.body.user.email;
-        config._query.user.findFirst({where: {email:email}})
+        config._query.user.findFirst({where: {email: email}})
             .then((res: User) => {
                 if (res) {
                     if (profileImage) {
                         imageUpload(profileImage, '_profile' + res.name, (data: any) => {
                             imageUrl = data.url;
-                            config._query.user.update({where: {email: email},
+                            config._query.user.update({
+                                where: {email: email},
                                 data: {
                                     profileImage: imageUrl,
                                     name: name
@@ -265,7 +278,7 @@ export function updateProfile(request: Request, response: Response) {
                         })
                     } else {
                         config._query.user.update({
-                            where: { email: email },
+                            where: {email: email},
                             data: {
                                 name: name
                             }
@@ -273,7 +286,7 @@ export function updateProfile(request: Request, response: Response) {
                             responseHandler(200, response, {data: result})
                         })
                             .catch((error: any) => {
-                                responseHandler(503,response,{message:"Please try again later"});
+                                responseHandler(503, response, {message: "Please try again later"});
                             })
                     }
                 } else {
@@ -284,8 +297,195 @@ export function updateProfile(request: Request, response: Response) {
                 console.log(error)
                 responseHandler(404, response, {message: "User not found"});
             })
-    }catch (e) {
+    } catch (e) {
         console.log(e);
-        responseHandler(503,response,{message:"Please try again later"});
+        responseHandler(503, response, {message: "Please try again later"});
     }
+}
+
+export function SocialLogin(request: Request, response: Response) {
+    const {access_token, scope, requestId} = request.body;
+    if (!access_token || !scope) {
+        return responseHandler(403, response, {message: "Unauthorized"})
+    } else {
+        axios
+            .get(`https://www.googleapis.com/oauth2/v3/userinfo?alt=json?access_token=${access_token}`, {
+                headers: {
+                    Authorization: `Bearer ${access_token}`,
+                    Accept: 'application/json'
+                }
+            })
+            .then((res) => {
+
+                let userdata = res.data;
+                if (userdata) {
+                    let email = userdata.email;
+                    config._query.user.findUnique({
+                        where: {
+                            email: email
+                        }
+                    }).then(result => {
+                        if (result) {
+                            const sessionId = hasher._createSession(result.email, result.id);
+                            config._query.session.upsert({
+                                    where: {
+                                        id: result?.Session?.id ? result.Session.id : 0
+                                    },
+                                    update:
+                                        {
+                                            session_id: sessionId,
+                                            extended: true
+                                        }
+                                    ,
+                                    create: {
+                                        session_id: sessionId,
+                                        extended: true,
+                                        User: {
+                                            connect: {
+                                                id: result.id
+                                            }
+                                        }
+                                    }
+                                }
+                            ).then((session: any) => {
+                                if (requestId) {
+                                    config._query.request.findFirst({where: {id: requestId}})
+                                        .then((res: any) => {
+                                            if (res) {
+                                                config._query.group.update({
+                                                    where: {id: res.groupId},
+                                                    data: {User: {connect: result}},
+                                                    include: {User: true}
+                                                })
+                                                    .then((groupUpdate: any) => {
+                                                        config._query.request.delete({where: {id: res.id}})
+                                                            .then(() => {
+                                                                config._query.role.create({
+                                                                    data: {
+                                                                        userId: result.id,
+                                                                        groupId: groupUpdate.id,
+                                                                        type: res.role
+                                                                    }
+                                                                })
+                                                                    .then(() => {
+                                                                        config._query.joining.create({
+                                                                            data:{
+                                                                                timestamp : new Date(),
+                                                                                userId:result.id,
+                                                                                groupId:res.groupId,
+                                                                            }
+                                                                        })
+                                                                        responseHandler(200, response, {data: {session: session}});
+                                                                    })
+                                                            })
+                                                    })
+                                                    .catch((error: any) => {
+                                                        responseHandler(200, response, {data: {session: session}});
+                                                    })
+                                            } else {
+                                                responseHandler(200, response, {data: {session: session}});
+                                            }
+                                        })
+                                        .catch((e: any) => {
+                                            console.log(e);
+                                            responseHandler(200, response, {data: {session: session}});
+                                        })
+                                } else {
+                                    responseHandler(200, response, {data: {session: session}});
+                                }
+
+                            })
+                        } else {
+                            config._query.user.create({
+                                data: {
+                                    email: userdata.email,
+                                    name: userdata.name,
+                                }
+                            }).then(result => {
+                                const sessionId = hasher._createSession(result.email, result.id);
+                                config._query.session.upsert({
+                                        where: {
+                                            id: result?.Session?.id ? result.Session.id : 0
+                                        },
+                                        update:
+                                            {
+                                                session_id: sessionId,
+                                                extended: true
+                                            }
+                                        ,
+                                        create: {
+                                            session_id: sessionId,
+                                            extended: true,
+                                            User: {
+                                                connect: {
+                                                    id: result.id
+                                                }
+                                            }
+                                        }
+                                    }
+                                ).then((session: any) => {
+                                    if (requestId) {
+                                        config._query.request.findFirst({where: {id: requestId}})
+                                            .then((res: any) => {
+                                                if (res) {
+                                                    config._query.group.update({
+                                                        where: {id: res.groupId},
+                                                        data: {User: {connect: result}},
+                                                        include: {User: true}
+                                                    })
+                                                        .then((groupUpdate: any) => {
+                                                            config._query.request.delete({where: {id: res.id}})
+                                                                .then(() => {
+                                                                    config._query.role.create({
+                                                                        data: {
+                                                                            userId: result.id,
+                                                                            groupId: groupUpdate.id,
+                                                                            type: res.role
+                                                                        }
+                                                                    })
+                                                                        .then(() => {
+                                                                            config._query.joining.create({
+                                                                                data:{
+                                                                                    timestamp : new Date(),
+                                                                                    userId:result.id,
+                                                                                    groupId:res.groupId,
+                                                                                }
+                                                                            })
+                                                                            responseHandler(200, response, {data: {session: session}});
+                                                                        })
+                                                                })
+                                                        })
+                                                        .catch((error: any) => {
+                                                            responseHandler(200, response, {data: {session: session}});
+                                                        })
+                                                } else {
+                                                    responseHandler(200, response, {data: {session: session}});
+                                                }
+                                            })
+                                            .catch((e: any) => {
+                                                console.log(e);
+                                                responseHandler(200, response, {data: {session: session}});
+                                            })
+                                    } else {
+                                        responseHandler(200, response, {data: {session: session}});
+                                    }
+                                })
+
+                            })
+                                .catch((error) => {
+                                    console.log(error)
+                                })
+                        }
+                    })
+
+
+                    // create a user record
+
+                } else {
+                    responseHandler(403, response, {message: "Unauthorized"})
+                }
+            })
+            .catch((err) => console.log(err));
+    }
+
 }

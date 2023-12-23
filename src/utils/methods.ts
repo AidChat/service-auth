@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const hasherObj: {
     hash: string | null,
-    _createSession: (s:string) => void,
+    _createSession: (s:string,i:number) => void,
     expire :string,
     expiry:string,
     _hash : (s:string) => string,
@@ -14,9 +14,10 @@ const hasherObj: {
     set expire(time : '1h'| '4h' | '10h' | '2d' | '7d'){
            this.expiry = time;
     },
-    _createSession : function(userName: string) {
+    _createSession : function(userName: string,userId:number) {
         return jwt.sign({
-            data: userName
+            data: userName,
+            user_id : userId
         }, this.key,{expiresIn:this.expiry})
     },
     _verify: function(key:string) : Promise<any> {
