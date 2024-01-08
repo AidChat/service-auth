@@ -24,8 +24,8 @@
   "main": "src/app.ts",
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/app.js",
-    "dev": "nodemon src/app.ts"
+    "start": "npx prisma db pull && node dist/app.js",
+    "dev": "npx prisma db pull && nodemon src/app.ts"
   },
   "author": "",
   "license": "ISC",

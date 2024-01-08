@@ -15,6 +15,7 @@ model User {
   sessionId      Int?
   profileImage   String          @default("")
   readReceiptId  Int?
+  Type           UserType        @default(Pending)
   ActivityStatus ActivityStatus?
   Joining        Joining[]
   Message        Message[]
@@ -132,6 +133,12 @@ model ActivityStatus {
   userId Int          @unique
   date   DateTime     @default(now())
   User   User         @relation(fields: [userId], references: [id])
+}
+
+enum UserType {
+  Seeker
+  Helper
+  Pending
 }
 
 enum GroupTokens {
