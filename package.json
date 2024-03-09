@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@prisma/client": "^5.3.1",
+    "@prisma/client": "^5.8.1",
     "@types/cors": "^2.8.14",
     "@types/node": "^20.6.2",
     "axios": "^1.5.1",
@@ -24,8 +24,8 @@
   "main": "src/app.ts",
   "scripts": {
     "build": "npx tsc",
-    "start": "node dist/app.js",
-    "dev": "nodemon src/app.ts"
+    "start": "npx prisma db pull && node dist/app.js",
+    "dev": "npx prisma db pull && nodemon src/app.ts"
   },
   "author": "",
   "license": "ISC",

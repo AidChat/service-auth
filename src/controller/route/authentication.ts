@@ -254,7 +254,7 @@ export function removeSessionController(request: Request, response: Response) {
 
 export function updateProfile(request: Request, response: Response) {
     try {
-        const {profileImage, name} = request.body;
+        const {profileImage, name,about,mobile} = request.body;
         let imageUrl: string = ''
         const email = request.body.user.email;
         config._query.user.findFirst({where: {email: email}})
@@ -267,9 +267,12 @@ export function updateProfile(request: Request, response: Response) {
                                 where: {email: email},
                                 data: {
                                     profileImage: imageUrl,
-                                    name: name
+                                    name: name,
+                                    about:about,
+                                    mobile
                                 }
                             }).then((result: any) => {
+                                console.log(result);
                                 responseHandler(200, response, {data: result})
                             })
                                 .catch((error: any) => {
@@ -280,7 +283,9 @@ export function updateProfile(request: Request, response: Response) {
                         config._query.user.update({
                             where: {email: email},
                             data: {
-                                name: name
+                                name: name,
+                                about,
+                                mobile
                             }
                         }).then((result: any) => {
                             responseHandler(200, response, {data: result})
@@ -369,10 +374,10 @@ export function SocialLogin(request: Request, response: Response) {
                                                                 })
                                                                     .then(() => {
                                                                         config._query.joining.create({
-                                                                            data:{
-                                                                                timestamp : new Date(),
-                                                                                userId:result.id,
-                                                                                groupId:res.groupId,
+                                                                            data: {
+                                                                                timestamp: new Date(),
+                                                                                userId: result.id,
+                                                                                groupId: res.groupId,
                                                                             }
                                                                         })
                                                                         responseHandler(200, response, {data: {session: session}});
@@ -445,10 +450,10 @@ export function SocialLogin(request: Request, response: Response) {
                                                                     })
                                                                         .then(() => {
                                                                             config._query.joining.create({
-                                                                                data:{
-                                                                                    timestamp : new Date(),
-                                                                                    userId:result.id,
-                                                                                    groupId:res.groupId,
+                                                                                data: {
+                                                                                    timestamp: new Date(),
+                                                                                    userId: result.id,
+                                                                                    groupId: res.groupId,
                                                                                 }
                                                                             })
                                                                             responseHandler(200, response, {data: {session: session}});
@@ -488,4 +493,29 @@ export function SocialLogin(request: Request, response: Response) {
             .catch((err) => console.log(err));
     }
 
+}
+
+export function SetUserType(request: Request, response: Response) {
+    try {
+        let user = request.body.user;
+        let {type} = request.body;
+        config._query.user.findUnique({where: {id: user.user_id}}).then(result => {
+            if (result.Type !== 'Pending') {
+                responseHandler(403, response, {message: 'User  already have a role for using this Aidchat. We request you to request for account deletion and signup again'})
+            } else {
+                config._query.user.update({where: {id: user.user_id}, data: {Type:type}})
+                    .then(() => {
+                        responseHandler(200, response, {message: "Consent saved."});
+                    }).catch((e) => {
+                        console.log(e)
+                    responseHandler(500, response, {message: "Please try again"});
+                })
+            }
+        })
+
+    } catch (e) {
+        console.log(e)
+        responseHandler(500, response, {message: "Please try again"});
+
+    }
 }
