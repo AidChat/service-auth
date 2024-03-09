@@ -254,7 +254,7 @@ export function removeSessionController(request: Request, response: Response) {
 
 export function updateProfile(request: Request, response: Response) {
     try {
-        const {profileImage, name} = request.body;
+        const {profileImage, name,about,mobile} = request.body;
         let imageUrl: string = ''
         const email = request.body.user.email;
         config._query.user.findFirst({where: {email: email}})
@@ -267,9 +267,12 @@ export function updateProfile(request: Request, response: Response) {
                                 where: {email: email},
                                 data: {
                                     profileImage: imageUrl,
-                                    name: name
+                                    name: name,
+                                    about:about,
+                                    mobile
                                 }
                             }).then((result: any) => {
+                                console.log(result);
                                 responseHandler(200, response, {data: result})
                             })
                                 .catch((error: any) => {
@@ -280,7 +283,9 @@ export function updateProfile(request: Request, response: Response) {
                         config._query.user.update({
                             where: {email: email},
                             data: {
-                                name: name
+                                name: name,
+                                about,
+                                mobile
                             }
                         }).then((result: any) => {
                             responseHandler(200, response, {data: result})
