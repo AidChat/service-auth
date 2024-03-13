@@ -25,7 +25,7 @@
   "scripts": {
     "build": "npx tsc",
     "start": "npx prisma db pull && node dist/app.js",
-    "dev": "npx prisma db pull && nodemon src/app.ts"
+    "dev": "npx prisma db pull && prisma generate && nodemon src/app.ts"
   },
   "author": "",
   "license": "ISC",
