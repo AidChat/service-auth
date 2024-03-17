@@ -26,7 +26,7 @@ export function login(request: Request, response: Response) {
                 }
             }).then(async (result: any) => {
                     if (!result) {
-                        responseHandler(404, response, {message: 'User does not exists.'})
+                        responseHandler(404, response, {message: 'User not found. Please register first'} )
                     } else {
                         if (!result.password) {
                             // social login case
@@ -122,7 +122,7 @@ export function login(request: Request, response: Response) {
  */
 export async function register(request: Request, response: Response) {
     try {
-        const {email, password, name, requestId} = request.body;
+        let {email, password, name, requestId,mobile} = request.body;
         if (!email || !password || !name) {
             responseHandler(400, response, {message: 'Please provide required inputs'});
         } else {
@@ -142,7 +142,8 @@ export async function register(request: Request, response: Response) {
                         data: {
                             email: email,
                             password: hashedPassword,
-                            name: name
+                            name: name,
+                            mobile:mobile
                         }
                     }).then(async (user: any) => {
                         const sessionId = hasher._createSession(email, user.id);

@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken');
 const hasherObj: {
     hash: string | null,
-    _createSession: (s:string,i:number) => void,
+    _createSession: (s:string,i:number,k:boolean) => void,
     expire :string,
     expiry:string,
     _hash : (s:string) => string,
-    _verify : (k:string) => Promise<any>,
+    _verify : (k:string,i:boolean) => Promise<any>,
     key:string | undefined
 } = {
     hash: null,
@@ -20,10 +20,10 @@ const hasherObj: {
             user_id : userId
         }, this.key,{expiresIn:this.expiry})
     },
-    _verify: function(key:string) : Promise<any> {
+    _verify: function(key:string,ignoreExpiration?:boolean) : Promise<any> {
         return new Promise((resolve,reject)=>{
             try {
-                let data = jwt.verify(key, this.key)
+                let data = jwt.verify(key, this.key,{ignoreExpiration})
                 resolve(data);
             }catch (e) {
                 reject(e)
