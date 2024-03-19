@@ -4,6 +4,7 @@ import {config} from "./utils/appConfig";
 import cors from 'cors';
 import {v2 as cloudinary} from 'cloudinary';
 import {imageUpload} from "./network/sources";
+import NodeCache from "node-cache";
 dotenv.config();
 
 
@@ -18,6 +19,8 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
+
+export const cache = new NodeCache();
 
 
 

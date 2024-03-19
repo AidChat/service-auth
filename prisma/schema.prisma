@@ -19,6 +19,7 @@ model User {
   about              String?
   mobile             String?
   ReminderMembers_id Int?
+  verifiedEmail      Boolean          @default(false)
   ActivityStatus     ActivityStatus?
   Joining            Joining[]
   Message            Message[]

@@ -1,10 +1,11 @@
 import app from 'express';
 import {
+    createCode,
     login,
     register,
     removeSessionController,
     sessionController,
-    SocialLogin
+    SocialLogin, verifyCode
 } from "../controller/route/authentication";
 import {verifyClient} from "../middleware";
 
@@ -22,6 +23,12 @@ router.route('/session')
 
 router.route('/social-login')
     .post(SocialLogin)
+
+router.route('/code')
+    // verify code
+    .post(verifyCode)
+    // request for a code
+    .put(createCode)
 
 
 module.exports = router;
